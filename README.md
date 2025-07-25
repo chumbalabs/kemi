@@ -31,29 +31,68 @@ A modern cryptocurrency analysis platform with AI-powered insights using Gemini 
 ## 🛠️ Quick Setup
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- Gemini API Key ([Get one here](https://ai.google.dev/gemini-api/docs))
+- **Docker & Docker Compose** (Recommended)
+- OR Python 3.8+ and Node.js 16+ for manual setup
+- **Gemini API Key** ([Get one here](https://ai.google.dev/gemini-api/docs))
 
-### Automated Setup
+### 🐳 Docker Setup (Recommended)
+
+The easiest way to run the platform is using Docker:
+
 ```bash
 # Clone the repository
 git clone <your-repo-url>
 cd kemi-crypto-platform
 
-# Run the setup script
-python setup.py
+# Copy environment template
+cp .env.example .env
+
+# Edit .env and add your API keys
+# GEMINI_API_KEY=your_actual_api_key_here
+# COINGECKO_API_KEY=your_coingecko_key_here (optional)
+
+# Start production environment
+./setup-docker.sh start prod
+
+# OR start development environment
+./setup-docker.sh start dev
 ```
 
-### Manual Setup
+**Docker Commands:**
+```bash
+# Start containers
+./setup-docker.sh start [dev|prod]
+
+# Stop containers
+./setup-docker.sh stop [dev|prod]
+
+# View logs
+./setup-docker.sh logs [dev|prod] [service]
+
+# Restart containers
+./setup-docker.sh restart [dev|prod]
+
+# Clean up Docker resources
+./setup-docker.sh cleanup
+```
+
+**Access Points:**
+- **Production**: Frontend at http://localhost:3000, API at http://localhost:8000
+- **Development**: Frontend at http://localhost:5173, API at http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+
+### 🔧 Manual Setup
+
+If you prefer to run without Docker:
 
 1. **Environment Configuration**
    ```bash
    # Copy the environment template
    cp .env.example .env
    
-   # Edit .env and add your Gemini API key
+   # Edit .env and add your API keys
    GEMINI_API_KEY=your_actual_api_key_here
+   COINGECKO_API_KEY=your_coingecko_key_here
    ```
 
 2. **Backend Setup**
@@ -112,7 +151,104 @@ Powered by Google's Gemini AI, the platform provides:
 - **Trading Insights**: Short and medium-term outlook
 - **Investment Perspective**: Fundamental analysis considerations
 
+## 🐳 Docker Architecture
+
+The platform uses a multi-container Docker setup:
+
+### Services
+- **kemi-api**: FastAPI backend with Python 3.11
+- **kemi-frontend**: React frontend served by Nginx
+- **redis**: Redis cache for improved performance
+
+### Networks
+- **kemi-network**: Bridge network for inter-container communication
+
+### Volumes
+- **redis_data**: Persistent storage for Redis cache
+
+### Health Checks
+All services include health checks for monitoring:
+- API health endpoint: `/api/health`
+- Frontend availability check
+- Redis ping check
+
+## 🔍 Troubleshooting
+
+### Docker Issues
+
+**Containers won't start:**
+```bash
+# Check container logs
+./setup-docker.sh logs [dev|prod] [service_name]
+
+# Check container status
+docker-compose ps
+
+# Rebuild containers
+docker-compose up --build --force-recreate
+```
+
+**Port conflicts:**
+```bash
+# Check what's using the ports
+netstat -tulpn | grep :8000
+netstat -tulpn | grep :3000
+
+# Stop conflicting services or change ports in docker-compose.yml
+```
+
+**Environment variables not loading:**
+```bash
+# Ensure .env file exists and has correct format
+cat .env
+
+# Restart containers after .env changes
+./setup-docker.sh restart [dev|prod]
+```
+
+### API Issues
+
+**Gemini AI not working:**
+- Verify `GEMINI_API_KEY` is set in `.env`
+- Check API key validity at [Google AI Studio](https://ai.google.dev/)
+- Review backend logs: `./setup-docker.sh logs prod kemi-api`
+
+**CoinGecko rate limits:**
+- Add `COINGECKO_API_KEY` to `.env` for higher limits
+- Check rate limiting in backend logs
+
+### Frontend Issues
+
+**Build failures:**
+```bash
+# Clear node_modules and rebuild
+docker-compose down
+docker system prune -f
+./setup-docker.sh start [dev|prod]
+```
+
 ## 🔧 Development
+
+### 🐳 Docker Development Environment
+
+The recommended way to develop is using Docker:
+
+```bash
+# Start development environment
+./setup-docker.sh start dev
+
+# View development logs
+./setup-docker.sh logs dev
+
+# Access development services:
+# - Frontend: http://localhost:5173 (with hot reload)
+# - Backend: http://localhost:8000 (with auto-reload)
+# - Redis: localhost:6379
+```
+
+### 🛠️ Local Development (Without Docker)
+
+If you prefer local development:
 
 ### Project Structure
 ```
@@ -122,16 +258,25 @@ kemi-crypto-platform/
 │   ├── ai_analysis.py    # Gemini AI integration
 │   ├── technical_analysis.py # Technical indicators
 │   ├── coin_analysis.py  # Coin analysis endpoints
-│   └── mcp_manager.py    # MCP client management
+│   ├── mcp_manager.py    # MCP client management
+│   ├── Dockerfile        # Backend Docker configuration
+│   └── requirements.txt  # Python dependencies
 ├── kemi-crypto/          # Frontend React application
 │   ├── src/
 │   │   ├── components/   # React components
 │   │   ├── pages/        # Page components
 │   │   ├── services/     # API services
 │   │   └── types/        # TypeScript types
-│   └── package.json
-├── .env                  # Unified environment config
-└── setup.py             # Setup script
+│   ├── Dockerfile        # Frontend production Docker config
+│   ├── Dockerfile.dev    # Frontend development Docker config
+│   ├── nginx.conf        # Nginx configuration for production
+│   └── package.json      # Node.js dependencies
+├── docker-compose.yml    # Production Docker Compose
+├── docker-compose.dev.yml # Development Docker Compose
+├── setup-docker.sh       # Docker setup script
+├── .env.example          # Environment template
+├── .env                  # Environment configuration (create from .env.example)
+└── .gitignore           # Git ignore rules
 ```
 
 ### API Endpoints
@@ -153,18 +298,65 @@ kemi-crypto-platform/
 
 ## 🚀 Deployment
 
-### Backend Deployment
+### 🐳 Docker Deployment (Recommended)
+
+**Production Deployment:**
+```bash
+# Build and start production containers
+docker-compose up --build -d
+
+# Or use the setup script
+./setup-docker.sh start prod
+```
+
+**Development Deployment:**
+```bash
+# Build and start development containers
+docker-compose -f docker-compose.dev.yml up --build -d
+
+# Or use the setup script
+./setup-docker.sh start dev
+```
+
+**Container Management:**
+```bash
+# View container status
+docker-compose ps
+
+# View logs
+docker-compose logs -f [service_name]
+
+# Stop containers
+docker-compose down
+
+# Rebuild containers
+docker-compose up --build
+```
+
+### 🔧 Manual Deployment
+
+**Backend Deployment:**
 ```bash
 cd kemi-api
+pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-### Frontend Deployment
+**Frontend Deployment:**
 ```bash
 cd kemi-crypto
+npm install
 npm run build
 # Serve the dist/ folder with your preferred web server
 ```
+
+### 🌐 Production Considerations
+
+- **Environment Variables**: Ensure all required API keys are set in `.env`
+- **Security**: Use HTTPS in production and secure your API keys
+- **Scaling**: Use Docker Swarm or Kubernetes for horizontal scaling
+- **Monitoring**: Implement logging and monitoring for production deployments
+- **Backup**: Regular backups of any persistent data
 
 ## 🤝 Contributing
 
