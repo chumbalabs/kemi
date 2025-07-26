@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: kemi-crypto-platform
+    env: docker
+    plan: starter
+    region: oregon
+    buildCommand: docker build -t kemi-crypto-platform .
+    startCommand: docker run -p $PORT:80 kemi-crypto-platform
+    envVars:
+      - key: API_BASE_URL
+        value: https://your-backend-service.onrender.com
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: COINGECKO_API_KEY
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true 
