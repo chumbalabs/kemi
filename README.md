@@ -51,6 +51,9 @@ cp .env.example .env
 # GEMINI_API_KEY=your_actual_api_key_here
 # COINGECKO_API_KEY=your_coingecko_key_here (optional)
 
+# Test Docker setup (optional but recommended)
+./test-docker.sh
+
 # Start production environment
 ./setup-docker.sh start prod
 

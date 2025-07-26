@@ -1,75 +1,39 @@
-version: '3.8'
-
 services:
-  # Backend API Service
+  # Backend API service
   kemi-api:
     build:
       context: ./kemi-api
       dockerfile: Dockerfile
     container_name: kemi-api
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - COINGECKO_API_KEY=${COINGECKO_API_KEY:-}
-      - API_PORT=8000
       - PYTHONPATH=/app
+    volumes:
+      - ./kemi-api:/app
     networks:
       - kemi-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
-  # Frontend Service
+  # Frontend service
   kemi-frontend:
     build:
       context: ./kemi-crypto
       dockerfile: Dockerfile
-      args:
-        - VITE_API_BASE_URL=http://localhost:8000
-        - VITE_GEMINI_API_KEY=${GEMINI_API_KEY}
-        - VITE_COINGECKO_API_KEY=${COINGECKO_API_KEY:-}
     container_name: kemi-frontend
+    restart: unless-stopped
     ports:
       - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_COINGECKO_API_KEY=${COINGECKO_API_KEY:-}
     depends_on:
       - kemi-api
     networks:
       - kemi-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/", "||", "exit", "1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Redis for caching (optional but recommended)
-  redis:
-    image: redis:7-alpine
-    container_name: kemi-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - kemi-network
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 networks:
   kemi-network:
     driver: bridge
-
-volumes:
-  redis_data:
-    driver: local
