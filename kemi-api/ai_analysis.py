@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 import os
 from datetime import datetime
+from price_formatter import format_crypto_price, round_to_precision
 
 # Gemini AI import
 try:
@@ -61,8 +62,8 @@ class AIAnalyzer:
         indicators = analysis_data.technical_analysis.get('indicators', {})
         signals = analysis_data.technical_analysis.get('signals', {})
         
-        # Format price data for better readability
-        current_price = f"${analysis_data.current_price:,.2f}"
+        # Format price data with proper precision for crypto
+        current_price = format_crypto_price(analysis_data.current_price)
         market_cap = f"${analysis_data.market_cap:,.0f}" if analysis_data.market_cap else 'N/A'
         volume_24h = f"${analysis_data.volume_24h:,.0f}" if analysis_data.volume_24h else 'N/A'
         
@@ -83,7 +84,9 @@ class AIAnalyzer:
         macd_signal = indicators.get('macd_signal', 0)
         if isinstance(macd_value, (int, float)) and isinstance(macd_signal, (int, float)):
             macd_status = "Bullish momentum" if macd_value > macd_signal else "Bearish momentum"
-            macd_display = f"{macd_value:.2f} ({macd_status})"
+            # Use appropriate precision for MACD values
+            macd_formatted = format_crypto_price(macd_value, "").lstrip('$')
+            macd_display = f"{macd_formatted} ({macd_status})"
         else:
             macd_display = "N/A"
         
@@ -105,20 +108,20 @@ TECHNICAL ANALYSIS DATA:
 KEY TECHNICAL INDICATORS:
 • RSI (14): {rsi_status}
 • MACD: {macd_display}
-• SMA 20: ${indicators.get('sma_20', 0):,.2f}
-• SMA 50: ${indicators.get('sma_50', 0):,.2f}
-• EMA 12: ${indicators.get('ema_12', 0):,.2f}
-• EMA 26: ${indicators.get('ema_26', 0):,.2f}
+• SMA 20: {format_crypto_price(indicators.get('sma_20', 0))}
+• SMA 50: {format_crypto_price(indicators.get('sma_50', 0))}
+• EMA 12: {format_crypto_price(indicators.get('ema_12', 0))}
+• EMA 26: {format_crypto_price(indicators.get('ema_26', 0))}
 • Volatility: {indicators.get('volatility', 0):.2f}%
 
 SUPPORT & RESISTANCE LEVELS:
-• Support: ${indicators.get('support_resistance', {}).get('support', 0):,.2f}
-• Resistance: ${indicators.get('support_resistance', {}).get('resistance', 0):,.2f}
+• Support: {format_crypto_price(indicators.get('support_resistance', {}).get('support', 0))}
+• Resistance: {format_crypto_price(indicators.get('support_resistance', {}).get('resistance', 0))}
 
 BOLLINGER BANDS:
-• Upper Band: ${indicators.get('bollinger_bands', {}).get('upper', 0):,.2f}
-• Middle Band: ${indicators.get('bollinger_bands', {}).get('middle', 0):,.2f}
-• Lower Band: ${indicators.get('bollinger_bands', {}).get('lower', 0):,.2f}
+• Upper Band: {format_crypto_price(indicators.get('bollinger_bands', {}).get('upper', 0))}
+• Middle Band: {format_crypto_price(indicators.get('bollinger_bands', {}).get('middle', 0))}
+• Lower Band: {format_crypto_price(indicators.get('bollinger_bands', {}).get('lower', 0))}
 
 TECHNICAL SIGNALS DETECTED:
 {chr(10).join(f"• {signal}" for signal in signals.get('signals', ['No specific signals detected']))}
@@ -224,7 +227,7 @@ Use specific numbers from the data provided. Be analytical and educational, avoi
 # Technical Analysis for {analysis_data.coin_name} ({analysis_data.coin_id.upper()})
 
 ## Market Overview
-- **Current Price**: ${analysis_data.current_price:,.6f}
+- **Current Price**: {format_crypto_price(analysis_data.current_price)}
 - **24h Change**: {analysis_data.price_change_24h:+.2f}%
 - **Market Cap**: ${analysis_data.market_cap:,.0f} if analysis_data.market_cap else 'N/A'
 - **24h Volume**: ${analysis_data.volume_24h:,.0f} if analysis_data.volume_24h else 'N/A'
@@ -237,12 +240,12 @@ Use specific numbers from the data provided. Be analytical and educational, avoi
 
 ## Key Technical Indicators
 - **RSI (14)**: {indicators.get('rsi', 'N/A')} - {'Overbought territory' if isinstance(indicators.get('rsi'), (int, float)) and indicators.get('rsi', 0) > 70 else 'Oversold territory' if isinstance(indicators.get('rsi'), (int, float)) and indicators.get('rsi', 0) < 30 else 'Neutral zone' if isinstance(indicators.get('rsi'), (int, float)) else 'Data unavailable'}
-- **Moving Averages**: SMA20: ${indicators.get('sma_20', 'N/A')}, SMA50: ${indicators.get('sma_50', 'N/A')}
+- **Moving Averages**: SMA20: {format_crypto_price(indicators.get('sma_20', 0)) if indicators.get('sma_20') else 'N/A'}, SMA50: {format_crypto_price(indicators.get('sma_50', 0)) if indicators.get('sma_50') else 'N/A'}
 - **MACD**: {indicators.get('macd', 'N/A')} - {'Bullish momentum' if isinstance(indicators.get('macd'), (int, float)) and indicators.get('macd', 0) > 0 else 'Bearish momentum' if isinstance(indicators.get('macd'), (int, float)) and indicators.get('macd', 0) < 0 else 'Neutral'}
 
 ## Support & Resistance Levels
-- **Support**: ${indicators.get('support_resistance', {}).get('support', 'N/A')}
-- **Resistance**: ${indicators.get('support_resistance', {}).get('resistance', 'N/A')}
+- **Support**: {format_crypto_price(indicators.get('support_resistance', {}).get('support', 0)) if indicators.get('support_resistance', {}).get('support') else 'N/A'}
+- **Resistance**: {format_crypto_price(indicators.get('support_resistance', {}).get('resistance', 0)) if indicators.get('support_resistance', {}).get('resistance') else 'N/A'}
 
 ## Risk Assessment
 - **Volatility**: {indicators.get('volatility', 'N/A')}% - {'High volatility' if isinstance(indicators.get('volatility'), (int, float)) and indicators.get('volatility', 0) > 5 else 'Moderate volatility' if isinstance(indicators.get('volatility'), (int, float)) and indicators.get('volatility', 0) > 2 else 'Low volatility' if isinstance(indicators.get('volatility'), (int, float)) else 'Volatility data unavailable'}

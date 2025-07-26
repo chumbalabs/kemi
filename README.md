@@ -41,8 +41,8 @@ The easiest way to run the platform is using Docker:
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
-cd kemi-crypto-platform
+git clone https://github.com/chumbacash/kemi.git
+cd kemi
 
 # Copy environment template
 cp .env.example .env
@@ -51,37 +51,38 @@ cp .env.example .env
 # GEMINI_API_KEY=your_actual_api_key_here
 # COINGECKO_API_KEY=your_coingecko_key_here (optional)
 
-# Test Docker setup (optional but recommended)
-./test-docker.sh
-
-# Start production environment
-./setup-docker.sh start prod
-
-# OR start development environment
-./setup-docker.sh start dev
+# Build and start containers
+docker-compose up --build -d
 ```
 
 **Docker Commands:**
 ```bash
 # Start containers
-./setup-docker.sh start [dev|prod]
+docker-compose up -d
+
+# Build and start containers
+docker-compose up --build -d
 
 # Stop containers
-./setup-docker.sh stop [dev|prod]
+docker-compose down
 
 # View logs
-./setup-docker.sh logs [dev|prod] [service]
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f kemi-api
+docker-compose logs -f kemi-frontend
 
 # Restart containers
-./setup-docker.sh restart [dev|prod]
+docker-compose restart
 
-# Clean up Docker resources
-./setup-docker.sh cleanup
+# Check container status
+docker-compose ps
 ```
 
 **Access Points:**
-- **Production**: Frontend at http://localhost:3000, API at http://localhost:8000
-- **Development**: Frontend at http://localhost:5173, API at http://localhost:8000
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
 
 ### 🔧 Manual Setup
@@ -156,24 +157,20 @@ Powered by Google's Gemini AI, the platform provides:
 
 ## 🐳 Docker Architecture
 
-The platform uses a multi-container Docker setup:
+The platform uses a simple Docker setup:
 
 ### Services
 - **kemi-api**: FastAPI backend with Python 3.11
 - **kemi-frontend**: React frontend served by Nginx
-- **redis**: Redis cache for improved performance
 
 ### Networks
 - **kemi-network**: Bridge network for inter-container communication
 
-### Volumes
-- **redis_data**: Persistent storage for Redis cache
-
-### Health Checks
-All services include health checks for monitoring:
-- API health endpoint: `/api/health`
-- Frontend availability check
-- Redis ping check
+### Features
+- Multi-stage frontend build (Node.js build → Nginx serve)
+- API proxy configuration in Nginx
+- Environment variable support
+- Container health monitoring
 
 ## 🔍 Troubleshooting
 
@@ -182,7 +179,11 @@ All services include health checks for monitoring:
 **Containers won't start:**
 ```bash
 # Check container logs
-./setup-docker.sh logs [dev|prod] [service_name]
+docker-compose logs -f
+
+# Check specific service logs
+docker-compose logs -f kemi-api
+docker-compose logs -f kemi-frontend
 
 # Check container status
 docker-compose ps
@@ -193,9 +194,9 @@ docker-compose up --build --force-recreate
 
 **Port conflicts:**
 ```bash
-# Check what's using the ports
-netstat -tulpn | grep :8000
-netstat -tulpn | grep :3000
+# Check what's using the ports (Windows)
+netstat -an | findstr :8000
+netstat -an | findstr :3000
 
 # Stop conflicting services or change ports in docker-compose.yml
 ```
@@ -203,10 +204,10 @@ netstat -tulpn | grep :3000
 **Environment variables not loading:**
 ```bash
 # Ensure .env file exists and has correct format
-cat .env
+type .env
 
 # Restart containers after .env changes
-./setup-docker.sh restart [dev|prod]
+docker-compose restart
 ```
 
 ### API Issues
@@ -214,7 +215,7 @@ cat .env
 **Gemini AI not working:**
 - Verify `GEMINI_API_KEY` is set in `.env`
 - Check API key validity at [Google AI Studio](https://ai.google.dev/)
-- Review backend logs: `./setup-docker.sh logs prod kemi-api`
+- Review backend logs: `docker-compose logs -f kemi-api`
 
 **CoinGecko rate limits:**
 - Add `COINGECKO_API_KEY` to `.env` for higher limits
@@ -224,10 +225,10 @@ cat .env
 
 **Build failures:**
 ```bash
-# Clear node_modules and rebuild
+# Clear containers and rebuild
 docker-compose down
 docker system prune -f
-./setup-docker.sh start [dev|prod]
+docker-compose up --build -d
 ```
 
 ## 🔧 Development
@@ -237,16 +238,15 @@ docker system prune -f
 The recommended way to develop is using Docker:
 
 ```bash
-# Start development environment
-./setup-docker.sh start dev
+# Start containers with live reload
+docker-compose up --build -d
 
-# View development logs
-./setup-docker.sh logs dev
+# View logs
+docker-compose logs -f
 
-# Access development services:
-# - Frontend: http://localhost:5173 (with hot reload)
-# - Backend: http://localhost:8000 (with auto-reload)
-# - Redis: localhost:6379
+# Access services:
+# - Frontend: http://localhost:3000
+# - Backend API: http://localhost:8000 (with auto-reload)
 ```
 
 ### 🛠️ Local Development (Without Docker)
@@ -274,9 +274,7 @@ kemi-crypto-platform/
 │   ├── Dockerfile.dev    # Frontend development Docker config
 │   ├── nginx.conf        # Nginx configuration for production
 │   └── package.json      # Node.js dependencies
-├── docker-compose.yml    # Production Docker Compose
-├── docker-compose.dev.yml # Development Docker Compose
-├── setup-docker.sh       # Docker setup script
+├── docker-compose.yml    # Docker Compose configuration
 ├── .env.example          # Environment template
 ├── .env                  # Environment configuration (create from .env.example)
 └── .gitignore           # Git ignore rules
@@ -303,22 +301,10 @@ kemi-crypto-platform/
 
 ### 🐳 Docker Deployment (Recommended)
 
-**Production Deployment:**
+**Docker Deployment:**
 ```bash
-# Build and start production containers
+# Build and start containers
 docker-compose up --build -d
-
-# Or use the setup script
-./setup-docker.sh start prod
-```
-
-**Development Deployment:**
-```bash
-# Build and start development containers
-docker-compose -f docker-compose.dev.yml up --build -d
-
-# Or use the setup script
-./setup-docker.sh start dev
 ```
 
 **Container Management:**

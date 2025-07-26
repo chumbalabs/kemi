@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import json
+from price_formatter import round_to_precision, get_price_precision
 
 @dataclass
 class TechnicalIndicators:
@@ -299,24 +300,28 @@ class TechnicalAnalyzer:
         # Generate signals
         signals = self.generate_signals(indicators, trend_analysis)
         
+        # Use current price to determine appropriate precision for all price-related values
+        current_price = prices[-1] if len(prices) > 0 else 1.0
+        price_precision = get_price_precision(current_price)
+        
         return {
             "indicators": {
-                "sma_20": round(sma_20, 6),
-                "sma_50": round(sma_50, 6),
-                "ema_12": round(ema_12, 6),
-                "ema_26": round(ema_26, 6),
+                "sma_20": round_to_precision(sma_20, current_price),
+                "sma_50": round_to_precision(sma_50, current_price),
+                "ema_12": round_to_precision(ema_12, current_price),
+                "ema_26": round_to_precision(ema_26, current_price),
                 "rsi": round(rsi, 2),
-                "macd": round(macd, 6),
-                "macd_signal": round(macd_signal, 6),
-                "macd_histogram": round(macd_histogram, 6),
+                "macd": round_to_precision(macd, current_price),
+                "macd_signal": round_to_precision(macd_signal, current_price),
+                "macd_histogram": round_to_precision(macd_histogram, current_price),
                 "bollinger_bands": {
-                    "upper": round(bollinger_upper, 6),
-                    "middle": round(bollinger_middle, 6),
-                    "lower": round(bollinger_lower, 6)
+                    "upper": round_to_precision(bollinger_upper, current_price),
+                    "middle": round_to_precision(bollinger_middle, current_price),
+                    "lower": round_to_precision(bollinger_lower, current_price)
                 },
                 "support_resistance": {
-                    "support": round(support, 6),
-                    "resistance": round(resistance, 6)
+                    "support": round_to_precision(support, current_price),
+                    "resistance": round_to_precision(resistance, current_price)
                 },
                 "volume_sma": round(volume_sma, 2),
                 "volatility": round(volatility, 2)
@@ -327,11 +332,11 @@ class TechnicalAnalyzer:
                 "strength": signals.strength,
                 "recommendation": signals.recommendation,
                 "confidence": round(signals.confidence, 1),
-                "key_levels": {k: round(v, 6) for k, v in signals.key_levels.items()},
+                "key_levels": {k: round_to_precision(v, current_price) for k, v in signals.key_levels.items()},
                 "signals": signals.signals
             },
             "summary": {
-                "current_price": round(prices[-1], 6),
+                "current_price": round_to_precision(current_price, current_price),
                 "price_change_24h": round(price_change_24h, 2),
                 "data_points": len(ohlc_data),
                 "analysis_quality": "high" if len(ohlc_data) >= 50 else "medium" if len(ohlc_data) >= 20 else "low"
