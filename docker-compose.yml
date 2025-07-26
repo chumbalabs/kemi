@@ -13,11 +13,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - COINGECKO_API_KEY=${COINGECKO_API_KEY:-}
       - API_PORT=8000
-      - NODE_ENV=production
-      - DEBUG=false
-    volumes:
-      - ./kemi-api:/app
-      - /app/__pycache__
+      - PYTHONPATH=/app
     networks:
       - kemi-network
     restart: unless-stopped
@@ -33,20 +29,20 @@ services:
     build:
       context: ./kemi-crypto
       dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8000
+        - VITE_GEMINI_API_KEY=${GEMINI_API_KEY}
+        - VITE_COINGECKO_API_KEY=${COINGECKO_API_KEY:-}
     container_name: kemi-frontend
     ports:
       - "3000:80"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8000
-      - VITE_GEMINI_API_KEY=${GEMINI_API_KEY}
-      - VITE_COINGECKO_API_KEY=${COINGECKO_API_KEY:-}
     depends_on:
       - kemi-api
     networks:
       - kemi-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 3
