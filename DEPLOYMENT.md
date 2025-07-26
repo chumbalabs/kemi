@@ -1,57 +1,84 @@
-# Kemi Crypto Platform - Simple Deployment Guide
+# Kemi Crypto Platform - Single Container Deployment
 
-## 🚨 Problem Solved
+## 🎯 **Solution: Single Container with Both Services**
 
-The error `failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory` occurs because Render expects a single `Dockerfile` in the root directory.
+Your project now uses a **single Dockerfile** that runs both the frontend and backend together using **supervisord** as a process manager.
 
-## ✅ Simple Solution
+## 🏗️ **Architecture**
 
-### Step 1: Deploy Backend API
+```
+┌─────────────────────────────────────┐
+│           Single Container          │
+├─────────────────────────────────────┤
+│  ┌─────────────┐  ┌──────────────┐  │
+│  │   Nginx     │  │   FastAPI    │  │
+│  │  (Port 80)  │  │ (Port 8000)  │  │
+│  │  Frontend   │  │   Backend    │  │
+│  └─────────────┘  └──────────────┘  │
+│           Supervisord               │
+└─────────────────────────────────────┘
+```
 
-1. **Create a new Web Service on Render**
-   - **Name**: `kemi-api`
+## 🚀 **Deployment Steps**
+
+### **Step 1: Deploy to Render**
+
+1. **Go to [Render Dashboard](https://dashboard.render.com)**
+2. **Click "New +" → "Web Service"**
+3. **Connect your GitHub repository**: `chumbacash/kemi`
+4. **Configure the service**:
+
+   - **Name**: `kemi-crypto-platform`
    - **Environment**: Docker
-   - **Build Command**: `docker build -f Dockerfile.backend -t kemi-api .`
-   - **Start Command**: `docker run -p $PORT:8000 kemi-api`
+   - **Branch**: `main`
+   - **Build Command**: `docker build -t kemi-platform .`
+   - **Start Command**: `docker run -p $PORT:80 kemi-platform`
 
-2. **Set Environment Variables**:
+5. **Set Environment Variables**:
    ```
    GEMINI_API_KEY=your_gemini_api_key
    COINGECKO_API_KEY=your_coingecko_api_key
    ```
 
-3. **Deploy and note the URL** (e.g., `https://kemi-api.onrender.com`)
+6. **Deploy!**
 
-### Step 2: Deploy Frontend
+### **Step 2: How It Works**
 
-1. **Create a new Web Service on Render**
-   - **Name**: `kemi-crypto-platform`
-   - **Environment**: Docker
-   - **Build Command**: `docker build -t kemi-frontend .`
-   - **Start Command**: `docker run -p $PORT:80 kemi-frontend`
+- **Nginx** serves the React frontend on port 80
+- **FastAPI** runs the backend API on port 8000
+- **Supervisord** manages both processes
+- **Nginx proxies** `/api/*` requests to the backend
+- **Frontend makes API calls** to `/api/endpoint`
 
-2. **Set Environment Variable**:
-   ```
-   VITE_API_BASE_URL=https://your-backend-service.onrender.com
-   ```
-
-## 🔧 That's It!
-
-- **Frontend**: Serves the React app
-- **Backend**: Handles API requests
-- **Communication**: Frontend makes direct API calls to backend URL
-
-## 🐳 Local Testing
+## 🔧 **Local Development**
 
 ```bash
-# Test the build locally
-docker build -t kemi-test .
+# Build and run locally
+docker build -t kemi-platform .
+docker run -p 3000:80 -p 8000:8000 kemi-platform
 
-# Run locally
-docker run -p 3000:80 kemi-test
+# Access:
+# Frontend: http://localhost:3000
+# Backend: http://localhost:8000
 ```
 
-## 📚 References
+## 📁 **Key Files**
 
-- [Render Docker Deployments](https://render.com/docs/deploy-an-image)
-- [Docker Build Context Issues](https://medium.com/@maheshwar.ramkrushna/understanding-the-docker-failed-to-compute-cache-key-error-c1b97a296a23) 
+- `Dockerfile` - Multi-stage build for both services
+- `supervisord.conf` - Process manager configuration
+- `kemi-crypto/nginx.conf` - Nginx with API proxy
+- `kemi-crypto/src/services/kemiApiService.ts` - Frontend API client
+
+## ✅ **Benefits**
+
+1. **Single deployment** - No need for separate services
+2. **Simplified architecture** - Everything in one container
+3. **Cost effective** - Only one service to pay for
+4. **Easy scaling** - Scale the entire application together
+5. **No CORS issues** - Same origin for frontend and API
+
+## 🐛 **Troubleshooting**
+
+- **Check logs**: Render provides logs for both nginx and backend
+- **Health check**: Visit `/health` to verify the service is running
+- **API test**: Try `/api/health` to test the backend directly 

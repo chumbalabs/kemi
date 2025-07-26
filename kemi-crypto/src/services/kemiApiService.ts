@@ -2,7 +2,7 @@
  * Service for interacting with the Kemi Crypto API backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export interface TechnicalIndicators {
   sma_20: number;
