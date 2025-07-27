@@ -35,13 +35,17 @@ A modern, responsive cryptocurrency dashboard built with React, TypeScript, Vite
    yarn install
    ```
 
-3. Create a `.env` file in the root directory with your API keys (optional):
+3. Environment Variables:
+   
+   The application loads environment variables from the parent directory's `.env` file. Make sure you have a `.env` file in the project root (parent directory) with the following variables:
+   
    ```
+   VITE_API_BASE_URL=http://localhost:8000
    VITE_COINGECKO_API_KEY=your_coingecko_api_key
-   VITE_OPENAI_API_KEY=your_openai_api_key
+   VITE_GEMINI_API_KEY=your_gemini_api_key
    ```
-
-   Note: The application can run without API keys, but you may encounter rate limits with CoinGecko, and the AI analysis feature will not work without an OpenAI API key.
+   
+   Note: The application can run without API keys, but you may encounter rate limits with CoinGecko, and the AI analysis feature will not work without a Gemini API key.
 
 4. Start the development server:
    ```bash
@@ -58,9 +62,9 @@ A modern, responsive cryptocurrency dashboard built with React, TypeScript, Vite
 
 The application uses the CoinGecko API to fetch cryptocurrency data. You can use the free tier, but it has rate limits. For better performance, consider getting an API key from [CoinGecko](https://www.coingecko.com/en/api).
 
-### OpenAI API
+### Gemini AI API
 
-The AI market analysis feature requires an OpenAI API key. You can get one from [OpenAI's website](https://platform.openai.com/).
+The AI market analysis feature requires a Google Gemini API key. You can get one from [Google AI Studio](https://ai.google.dev/).
 
 ## Building for Production
 
@@ -82,7 +86,7 @@ The build output will be in the `dist` directory.
 - **Tailwind CSS**: Utility-first CSS framework
 - **Axios**: Promise-based HTTP client
 - **CoinGecko API**: Cryptocurrency data API
-- **OpenAI API**: GPT-4o for AI-powered market analysis
+- **Google Gemini AI**: AI-powered market analysis
 
 ## License
 
