@@ -1,6 +1,10 @@
 # Multi-stage build for production frontend
 FROM node:20-alpine AS builder
 
+# Add build argument to force cache invalidation
+ARG BUILD_DATE=unknown
+LABEL build-date=$BUILD_DATE
+
 # Set working directory
 WORKDIR /app
 
