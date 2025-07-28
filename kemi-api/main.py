@@ -173,7 +173,12 @@ app.include_router(coin_analysis_router)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Frontend URLs
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://localhost:3000",
+        "https://kemi-frontend.onrender.com",
+        "https://kemi-iqae.onrender.com"
+    ],  # Frontend URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

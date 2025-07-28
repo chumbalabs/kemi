@@ -1,0 +1,30 @@
+services:
+  # Backend API Service
+  - type: web
+    name: kemi-backend
+    env: docker
+    dockerfilePath: ./kemi-api/Dockerfile
+    plan: free
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: COINGECKO_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: PYTHONPATH
+        value: /app
+      - key: API_PORT
+        value: "8000"
+
+  # Frontend Service
+  - type: web
+    name: kemi-frontend
+    env: docker
+    dockerfilePath: ./kemi-crypto/Dockerfile.prod
+    plan: free
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://kemi-backend.onrender.com
+      - key: VITE_GEMINI_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: VITE_COINGECKO_API_KEY
+        sync: false  # Set this in Render dashboard 
