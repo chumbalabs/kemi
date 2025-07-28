@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  kemi-api:
+    build:
+      context: ./kemi-api
+      dockerfile: Dockerfile
+    container_name: kemi-api
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - COINGECKO_API_KEY=${COINGECKO_API_KEY}
+      - PYTHONPATH=/app
+      - API_PORT=8000
+    volumes:
+      - ./kemi-api:/app
+    networks:
+      - kemi-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Service
+  kemi-frontend:
+    build:
+      context: ./kemi-crypto
+      dockerfile: Dockerfile.prod
+    container_name: kemi-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://kemi-api:8000
+      - VITE_GEMINI_API_KEY=${GEMINI_API_KEY}
+      - VITE_COINGECKO_API_KEY=${COINGECKO_API_KEY}
+    depends_on:
+      - kemi-api
+    networks:
+      - kemi-network
+    restart: unless-stopped
+
+networks:
+  kemi-network:
+    driver: bridge
+
+volumes:
+  kemi_data:
