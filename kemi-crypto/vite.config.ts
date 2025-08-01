@@ -10,10 +10,14 @@ export default defineConfig(({ mode }) => {
   // 3. .env (lowest priority)
   const env = loadEnv(mode, process.cwd(), '')
   
+  // For production builds, if VITE_API_BASE_URL is not set, use the backend URL
+  const apiBaseUrl = env.VITE_API_BASE_URL || (mode === 'production' ? 'https://kemi-backend.onrender.com' : undefined)
+  
   // Debug: Log environment variables being loaded
   console.log('🔧 Vite Config - Environment Variables:', {
     mode,
-    VITE_API_BASE_URL: env.VITE_API_BASE_URL,
+    VITE_API_BASE_URL: apiBaseUrl,
+    originalValue: env.VITE_API_BASE_URL,
     cwd: process.cwd()
   })
   
@@ -34,7 +38,7 @@ export default defineConfig(({ mode }) => {
     },
     // Define environment variables from the root .env file
     define: {
-      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL),
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBaseUrl),
       'import.meta.env.VITE_COINGECKO_API_KEY': JSON.stringify(env.VITE_COINGECKO_API_KEY),
       'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY),
       'import.meta.env.DEV': JSON.stringify(mode === 'development'),
