@@ -2,7 +2,31 @@
  * Service for interacting with the Kemi Crypto API backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// For production, we need to append '/api' to the base URL
+// For development, the base URL is already '/api'
+const getApiUrl = (endpoint: string) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  
+  // Debug logging
+  console.log('🔧 getApiUrl debug:', {
+    endpoint,
+    baseUrl,
+    envValue: import.meta.env.VITE_API_BASE_URL,
+    isProduction: baseUrl && baseUrl !== '/api'
+  });
+  
+  if (baseUrl && baseUrl !== '/api') {
+    // Production: baseUrl is full URL like 'https://kemi-backend.onrender.com'
+    const url = `${baseUrl}/api${endpoint}`;
+    console.log('🔧 Using production URL:', url);
+    return url;
+  } else {
+    // Development: baseUrl is '/api' or undefined
+    const url = `/api${endpoint}`;
+    console.log('🔧 Using development URL:', url);
+    return url;
+  }
+};
 
 export interface TechnicalIndicators {
   sma_20: number;
@@ -112,17 +136,15 @@ export interface CoinAnalysisResponse {
 }
 
 class KemiApiService {
-  private baseUrl: string;
-
   constructor() {
-    this.baseUrl = API_BASE_URL;
+    // No longer need baseUrl since we use getApiUrl function
   }
 
   /**
    * Get comprehensive coin analysis including technical indicators and AI insights
    */
   async getCoinAnalysis(coinId: string, forceRefresh = false): Promise<CoinAnalysisResponse> {
-    const url = new URL(`${this.baseUrl}/api/coins/${coinId}/analysis`);
+    const url = new URL(getApiUrl(`/coins/${coinId}/analysis`));
     if (forceRefresh) {
       url.searchParams.set('force_refresh', 'true');
     }
@@ -140,7 +162,7 @@ class KemiApiService {
    * Get only technical analysis for a coin
    */
   async getTechnicalAnalysis(coinId: string, days = 30): Promise<any> {
-    const url = new URL(`${this.baseUrl}/api/coins/${coinId}/technical`);
+    const url = new URL(getApiUrl(`/coins/${coinId}/technical`));
     url.searchParams.set('days', days.toString());
 
     const response = await fetch(url.toString());
@@ -156,7 +178,7 @@ class KemiApiService {
    * Get OHLC data for a coin
    */
   async getOHLCData(coinId: string, days = 30, interval = 'daily'): Promise<any> {
-    const url = new URL(`${this.baseUrl}/api/coins/${coinId}/ohlc`);
+    const url = new URL(getApiUrl(`/coins/${coinId}/ohlc`));
     url.searchParams.set('days', days.toString());
     url.searchParams.set('interval', interval);
 
@@ -173,7 +195,7 @@ class KemiApiService {
    * Get API health status
    */
   async getHealthStatus(): Promise<any> {
-    const response = await fetch(`${this.baseUrl}/api/health`);
+    const response = await fetch(getApiUrl('/health'));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch health status: ${response.statusText}`);
@@ -211,7 +233,7 @@ class KemiApiService {
       usd_24h_change: number;
     }>;
   }> {
-    const url = new URL(`${this.baseUrl}/api/top-gainers-losers`);
+    const url = new URL(getApiUrl('/top-gainers-losers'));
     url.searchParams.set('vs_currency', vs_currency);
     url.searchParams.set('duration', duration);
     url.searchParams.set('top_coins', top_coins);
@@ -241,7 +263,7 @@ class KemiApiService {
       };
     }>;
   }> {
-    const response = await fetch(`${this.baseUrl}/api/trending`);
+    const response = await fetch(getApiUrl('/trending'));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch trending coins: ${response.statusText}`);
@@ -260,7 +282,7 @@ class KemiApiService {
     active_cryptocurrencies: number;
     markets: number;
   }> {
-    const response = await fetch(`${this.baseUrl}/api/global`);
+    const response = await fetch(getApiUrl('/global'));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch global market data: ${response.statusText}`);
@@ -302,7 +324,7 @@ class KemiApiService {
       usd_24h_change: number;
     }>;
   }> {
-    const response = await fetch(`${this.baseUrl}/api/market-summary`);
+    const response = await fetch(getApiUrl('/market-summary'));
     
     if (!response.ok) {
       throw new Error(`Failed to fetch market summary: ${response.statusText}`);
@@ -315,7 +337,7 @@ class KemiApiService {
    * Clear analysis cache
    */
   async clearCache(): Promise<any> {
-    const response = await fetch(`${this.baseUrl}/api/cache/clear`, {
+    const response = await fetch(getApiUrl('/cache/clear'), {
       method: 'POST'
     });
     

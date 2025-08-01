@@ -5,8 +5,18 @@ import { join } from 'path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load env file from parent directory (root of the project)
-  const env = loadEnv(mode, join(process.cwd(), '..'), '')
+  // Load env files with proper priority:
+  // 1. .env.local (highest priority)
+  // 2. .env.development or .env.production
+  // 3. .env (lowest priority)
+  const env = loadEnv(mode, process.cwd(), '')
+  
+  // Debug: Log environment variables being loaded
+  console.log('🔧 Vite Config - Environment Variables:', {
+    mode,
+    VITE_API_BASE_URL: env.VITE_API_BASE_URL,
+    cwd: process.cwd()
+  })
   
   return {
     plugins: [react(), tailwind()],
