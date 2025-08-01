@@ -25,7 +25,7 @@ services:
     plan: free
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://kemi-backend.onrender.com
+        value: /api  # Use relative URL for Blueprint deployment
       - key: VITE_GEMINI_API_KEY
         sync: false  # Set this in Render dashboard
       - key: VITE_COINGECKO_API_KEY

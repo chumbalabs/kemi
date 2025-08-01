@@ -2,8 +2,10 @@
  * Service for interacting with the Kemi Crypto API backend
  */
 
-// For production, we need to append '/api' to the base URL
-// For development, the base URL is already '/api'
+// Handle different deployment scenarios:
+// 1. Development: baseUrl is undefined, use '/api'
+// 2. Blueprint deployment: baseUrl is '/api', use '/api'
+// 3. Separate services: baseUrl is full URL, append '/api'
 const getApiUrl = (endpoint: string) => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
   
@@ -16,14 +18,14 @@ const getApiUrl = (endpoint: string) => {
   });
   
   if (baseUrl && baseUrl !== '/api') {
-    // Production: baseUrl is full URL like 'https://kemi-backend.onrender.com'
+    // Separate services deployment: baseUrl is full URL like 'https://kemi-backend.onrender.com'
     const url = `${baseUrl}/api${endpoint}`;
-    console.log('🔧 Using production URL:', url);
+    console.log('🔧 Using separate services URL:', url);
     return url;
   } else {
-    // Development: baseUrl is '/api' or undefined
+    // Development or Blueprint deployment: baseUrl is '/api' or undefined
     const url = `/api${endpoint}`;
-    console.log('🔧 Using development URL:', url);
+    console.log('🔧 Using relative URL:', url);
     return url;
   }
 };
