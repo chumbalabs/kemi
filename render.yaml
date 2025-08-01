@@ -20,7 +20,7 @@ services:
   - type: web
     name: kemi-frontend
     env: docker
-    dockerfilePath: ./kemi-crypto/Dockerfile.prod
+    dockerfilePath: ./Dockerfile.prod
     rootDir: kemi-crypto
     plan: free
     envVars:
