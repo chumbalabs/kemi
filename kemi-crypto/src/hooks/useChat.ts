@@ -21,7 +21,7 @@ interface UseChatReturn {
   isConnected: boolean;
 }
 
-export function useChat({ coinContext, autoLoadHistory = true }: UseChatOptions = {}): UseChatReturn {
+export function useChat({ coinContext }: UseChatOptions = {}): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -3,7 +3,7 @@ import chatService from '../../services/chatService';
 
 const ChatDebug: React.FC = () => {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
-  const [apiUrl, setApiUrl] = useState<string>('');
+
   const [testResult, setTestResult] = useState<string>('');
 
   useEffect(() => {
