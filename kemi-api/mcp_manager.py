@@ -224,6 +224,30 @@ class MCPManager:
         """Get trending coins"""
         return await self.call_tool_with_retry("get_search_trending", {})
     
+    async def search_coins(self, query: str) -> Optional[Dict[str, Any]]:
+        """Search for coins"""
+        return await self.call_tool_with_retry("get_search", {"query": query})
+    
+    async def get_coin_markets(self, vs_currency: str = "usd", per_page: int = 10) -> Optional[list]:
+        """Get coins market data"""
+        return await self.call_tool_with_retry("get_coins_markets", {
+            "vs_currency": vs_currency,
+            "order": "market_cap_desc",
+            "per_page": per_page,
+            "page": 1,
+            "sparkline": False,
+            "price_change_percentage": "24h"
+        })
+    
+    async def get_coin_price(self, coin_id: str, vs_currency: str = "usd") -> Optional[Dict[str, Any]]:
+        """Get simple coin price"""
+        return await self.call_tool_with_retry("get_simple_price", {
+            "ids": coin_id,
+            "vs_currencies": vs_currency,
+            "include_24hr_change": True,
+            "include_market_cap": True
+        })
+    
     async def get_global_data(self) -> Optional[Dict[str, Any]]:
         """Get global market data"""
         return await self.call_tool_with_retry("get_global", {})

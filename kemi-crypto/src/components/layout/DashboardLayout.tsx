@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import Header from '../../header';
 import Footer from '../../footer';
+import StatelessChatWidget from '../chat/StatelessChatWidget';
+import ChatDebug from '../chat/ChatDebug';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -19,6 +21,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Footer - Now using modular component */}
       <Footer />
+      
+      {/* Chat Widget - AI Assistant */}
+      <StatelessChatWidget />
     </div>
   );
 } 

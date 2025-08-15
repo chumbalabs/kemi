@@ -11,12 +11,25 @@ import os
 from datetime import datetime
 from price_formatter import format_crypto_price, round_to_precision
 
-# Gemini AI import
+# Gemini AI import - support both old and new APIs
 try:
-    import google.generativeai as genai
+    # Try new API first
+    from google import genai as new_genai
+    NEW_GENAI_AVAILABLE = True
 except ImportError:
-    genai = None
-    print("Warning: google-generativeai not installed. AI analysis will use fallback mode.")
+    NEW_GENAI_AVAILABLE = False
+    new_genai = None
+
+try:
+    # Fallback to old API
+    import google.generativeai as old_genai
+    OLD_GENAI_AVAILABLE = True
+except ImportError:
+    OLD_GENAI_AVAILABLE = False
+    old_genai = None
+
+if not NEW_GENAI_AVAILABLE and not OLD_GENAI_AVAILABLE:
+    print("Warning: No Gemini AI library available. AI analysis will use fallback mode.")
 
 @dataclass
 class CoinAnalysisData:
@@ -40,20 +53,34 @@ class AIAnalyzer:
         print(f"🔧 AIAnalyzer init - API key provided: {'Yes' if gemini_api_key else 'No'}")
         print(f"🔧 AIAnalyzer init - API key from env: {'Yes' if os.getenv('GEMINI_API_KEY') else 'No'}")
         print(f"🔧 AIAnalyzer init - Final API key: {'Yes' if self.gemini_api_key else 'No'}")
-        print(f"🔧 AIAnalyzer init - genai available: {'Yes' if genai else 'No'}")
+        print(f"🔧 AIAnalyzer init - New genai available: {'Yes' if NEW_GENAI_AVAILABLE else 'No'}")
+        print(f"🔧 AIAnalyzer init - Old genai available: {'Yes' if OLD_GENAI_AVAILABLE else 'No'}")
         
-        # Initialize Gemini
-        if self.gemini_api_key and genai:
-            try:
-                genai.configure(api_key=self.gemini_api_key)
-                self.gemini_model = genai.GenerativeModel('gemini-1.5-flash')
-                print("✅ Gemini model initialized successfully!")
-            except Exception as e:
-                print(f"❌ Failed to initialize Gemini model: {e}")
-                self.gemini_model = None
-        else:
-            self.gemini_model = None
-            print("Warning: Gemini API key not found. AI analysis will use fallback mode.")
+        self.gemini_model = None
+        self.gemini_client = None
+        self.api_type = None
+        
+        # Initialize Gemini - try new API first, then fallback to old
+        if self.gemini_api_key:
+            if NEW_GENAI_AVAILABLE:
+                try:
+                    self.gemini_client = new_genai.Client(api_key=self.gemini_api_key)
+                    self.api_type = "new"
+                    print("✅ New Gemini API client initialized successfully!")
+                except Exception as e:
+                    print(f"⚠️ New Gemini API failed: {e}")
+            
+            if not self.gemini_client and OLD_GENAI_AVAILABLE:
+                try:
+                    old_genai.configure(api_key=self.gemini_api_key)
+                    self.gemini_model = old_genai.GenerativeModel('gemini-1.5-flash')
+                    self.api_type = "old"
+                    print("✅ Old Gemini API model initialized successfully!")
+                except Exception as e:
+                    print(f"❌ Failed to initialize old Gemini model: {e}")
+        
+        if not self.gemini_client and not self.gemini_model:
+            print("Warning: Gemini API not available. AI analysis will use fallback mode.")
     
     def create_analysis_prompt(self, analysis_data: CoinAnalysisData) -> str:
         """Create a comprehensive analysis prompt for Gemini AI"""
@@ -180,16 +207,37 @@ Use specific numbers from the data provided. Be analytical and educational, avoi
         return '\n'.join(info_parts) if info_parts else "- No additional coin information available"
     
     async def generate_gemini_analysis(self, analysis_data: CoinAnalysisData) -> Optional[str]:
-        """Generate analysis using Gemini AI"""
-        if not self.gemini_model:
+        """Generate analysis using Gemini AI (supports both old and new APIs)"""
+        if not self.gemini_client and not self.gemini_model:
             return None
         
         try:
             prompt = self.create_analysis_prompt(analysis_data)
-            response = await asyncio.to_thread(self.gemini_model.generate_content, prompt)
-            return response.text
+            
+            if self.api_type == "new" and self.gemini_client:
+                # Use new API
+                response = await asyncio.to_thread(
+                    self.gemini_client.models.generate_content,
+                    model="gemini-2.0-flash-exp",
+                    contents=prompt
+                )
+                return response.text
+            
+            elif self.api_type == "old" and self.gemini_model:
+                # Use old API
+                response = await asyncio.to_thread(self.gemini_model.generate_content, prompt)
+                return response.text
+            
+            return None
+            
         except Exception as e:
-            print(f"Gemini analysis error: {e}")
+            error_msg = str(e)
+            print(f"Gemini analysis error: {error_msg}")
+            
+            # Handle quota/rate limit errors gracefully
+            if "quota" in error_msg.lower() or "429" in error_msg:
+                print("⚠️ Gemini API quota exceeded, using fallback analysis")
+            
             return None
     
     async def generate_comprehensive_analysis(self, analysis_data: CoinAnalysisData) -> Dict[str, Any]:

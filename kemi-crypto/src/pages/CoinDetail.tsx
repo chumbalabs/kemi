@@ -11,6 +11,7 @@ import Footer from '../footer';
 import AiAnalysisCard from '../components/dashboard/AiAnalysisCard';
 import TechnicalAnalysisCard from '../components/dashboard/TechnicalAnalysisCard';
 import MarketDataCard from '../components/dashboard/MarketDataCard';
+import StatelessChatWidget from '../components/chat/StatelessChatWidget';
 
 interface CoinDetailData extends Coin {
   description?: string;
@@ -484,6 +485,9 @@ const CoinDetail: FC = () => {
       </main>
       {/* Footer - Using modular component */}
       <Footer />
+      
+      {/* Chat Widget with coin context */}
+      <StatelessChatWidget coinContext={coinId} />
     </div>
   );
 };

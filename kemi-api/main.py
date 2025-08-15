@@ -20,8 +20,9 @@ print(f"🔑 Gemini API Key loaded: {'Yes' if gemini_key else 'No'}")
 if gemini_key:
     print(f"🔑 Key preview: {gemini_key[:10]}...")
 
-# Import coin analysis router
+# Import routers
 from coin_analysis import router as coin_analysis_router
+from chat_agent import router as chat_agent_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -47,40 +48,90 @@ _request_locks = {}
 class CacheManager:
     def __init__(self):
         self.cache = {}
+        # Import ChromaDB cache as fallback
+        try:
+            from chroma_cache import chroma_cache
+            self.chroma_cache = chroma_cache
+            logger.info("✅ ChromaDB persistent cache initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ ChromaDB not available: {e}")
+            self.chroma_cache = None
     
     def get(self, key: str) -> Optional[Any]:
-        """Get cached data if not expired"""
+        """Get cached data if not expired, with ChromaDB fallback"""
+        # Try in-memory cache first
         if key in self.cache:
             data, timestamp, ttl = self.cache[key]
             if time.time() - timestamp < ttl:
-                logger.info(f"💾 Cache hit for key: {key}")
+                logger.info(f"💾 Memory cache hit for key: {key}")
                 return data
             else:
                 # Don't remove expired cache immediately - keep for fallback
-                logger.info(f"⏰ Cache expired for key: {key}")
+                logger.info(f"⏰ Memory cache expired for key: {key}")
+        
+        # Try ChromaDB cache as fallback
+        if self.chroma_cache:
+            chroma_data = self.chroma_cache.get(key, max_age_hours=1)  # 1 hour for fresh data
+            if chroma_data:
+                # Update in-memory cache with ChromaDB data
+                self.set(key, chroma_data, 300)  # Cache for 5 minutes
+                return chroma_data
+        
         return None
     
     def get_stale(self, key: str) -> Optional[Any]:
         """Get cached data even if expired (for fallback)"""
+        # Try in-memory stale cache first
         if key in self.cache:
             data, timestamp, ttl = self.cache[key]
             age = time.time() - timestamp
-            logger.info(f"🔄 Using stale cache for key: {key} (age: {age:.0f}s)")
+            logger.info(f"🔄 Using stale memory cache for key: {key} (age: {age:.0f}s)")
             return data
+        
+        # Try ChromaDB stale cache as ultimate fallback
+        if self.chroma_cache:
+            stale_data = self.chroma_cache.get_stale(key, max_stale_days=1)  # 1 day max stale
+            if stale_data:
+                logger.info(f"🔄 Using stale ChromaDB cache for key: {key}")
+                return stale_data
+        
         return None
     
     def set(self, key: str, data: Any, ttl: int):
-        """Set cache with TTL"""
+        """Set cache with TTL in both memory and ChromaDB"""
+        # Set in memory cache
         self.cache[key] = (data, time.time(), ttl)
-        logger.info(f"💾 Cache set for key: {key} with TTL: {ttl}s")
+        logger.info(f"💾 Memory cache set for key: {key} with TTL: {ttl}s")
+        
+        # Set in ChromaDB for persistence (async to avoid blocking)
+        if self.chroma_cache and ttl > 60:  # Only persist data with TTL > 1 minute
+            try:
+                # Convert Pydantic models to dict for ChromaDB storage
+                serializable_data = data
+                if hasattr(data, 'dict'):
+                    serializable_data = data.dict()
+                elif hasattr(data, 'model_dump'):
+                    serializable_data = data.model_dump()
+                
+                self.chroma_cache.set(key, serializable_data)
+            except Exception as e:
+                logger.warning(f"⚠️ ChromaDB cache set failed for {key}: {e}")
     
     def clear(self):
         """Clear all cache"""
         self.cache.clear()
-        logger.info("🗑️ Cache cleared")
+        logger.info("🗑️ Memory cache cleared")
+        
+        # Optionally clear ChromaDB cache too
+        if self.chroma_cache:
+            try:
+                self.chroma_cache.clear_expired(max_age_days=1)  # Clean old entries
+                logger.info("🗑️ ChromaDB cache cleaned")
+            except Exception as e:
+                logger.warning(f"⚠️ ChromaDB cache clear failed: {e}")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get cache statistics"""
+        """Get cache statistics including ChromaDB"""
         current_time = time.time()
         active_keys = []
         expired_keys = []
@@ -96,11 +147,24 @@ class CacheManager:
             else:
                 expired_keys.append(key)
         
-        return {
+        memory_stats = {
             "total_keys": len(self.cache),
             "active_keys": len(active_keys),
             "expired_keys": len(expired_keys),
             "cache_details": active_keys
+        }
+        
+        # Get ChromaDB stats
+        chroma_stats = {}
+        if self.chroma_cache:
+            try:
+                chroma_stats = self.chroma_cache.get_stats()
+            except Exception as e:
+                chroma_stats = {"error": str(e)}
+        
+        return {
+            "memory_cache": memory_stats,
+            "persistent_cache": chroma_stats
         }
 
 async def debounced_request(key: str, request_func):
@@ -167,8 +231,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Include coin analysis router
+# Include routers
 app.include_router(coin_analysis_router)
+app.include_router(chat_agent_router)
 
 # Add CORS middleware
 app.add_middleware(
@@ -176,6 +241,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173", 
         "http://localhost:3000",
+        "http://kemicrypto.icu",
         "https://kemi-frontend.onrender.com",
         "https://kemi-iqae.onrender.com"
     ],  # Frontend URLs

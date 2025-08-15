@@ -72,92 +72,16 @@ const AiAnalysisCard: FC<AiAnalysisCardProps> = ({
     }
   };
 
-  // Format the analysis text for better display
+  // Simple text formatting - just clean up the text
   const formatAnalysisText = (text: string) => {
-    // First, properly handle escaped newlines from JSON
-    let cleanText = text
-      .replace(/\\n/g, '\n') // Convert escaped newlines to actual newlines
+    return text
+      .replace(/\\n/g, '\n') // Convert escaped newlines
+      .replace(/##\s*/g, '') // Remove section headers
+      .replace(/📊|🔍|🎯|⚠️|📈|💡/g, '') // Remove emojis
       .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
       .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown
-      .replace(/^\s*[-•]\s*/gm, '• '); // Normalize bullet points
-
-    // Split by sections (lines starting with ##)
-    const sections = cleanText.split(/(?=##\s)/g).filter(section => section.trim());
-
-    return sections.map((section, index) => {
-      const lines = section.trim().split('\n');
-      const title = lines[0];
-      const content = lines.slice(1).join('\n').trim();
-
-      // Check if this is a section header
-      if (title.startsWith('##')) {
-        const cleanTitle = title.replace(/^##\s*/, '').replace(/📊|🔍|🎯|⚠️|📈|💡/g, '').trim();
-        const emoji = title.match(/📊|🔍|🎯|⚠️|📈|💡/)?.[0] || '';
-
-        return (
-          <div key={index} className="mb-8">
-            <div className="bg-white p-6 border-l-4 border-black">
-              <h3 className="text-xl font-bold text-black mb-5 flex items-start">
-                {emoji && <span className="mr-3 text-2xl">{emoji}</span>}
-                {cleanTitle}
-              </h3>
-              <div className="text-black leading-relaxed space-y-4">
-                {content.split('\n\n').map((paragraph, paragraphIndex) => {
-                  if (!paragraph.trim()) return null;
-
-                  // Handle bullet points
-                  if (paragraph.includes('•') || paragraph.includes('*')) {
-                    const bulletPoints = paragraph.split('\n').filter(line => line.trim());
-                    return (
-                      <div key={paragraphIndex} className="space-y-3">
-                        {bulletPoints.map((line, lineIndex) => {
-                          if (line.trim().startsWith('•') || line.trim().startsWith('*')) {
-                            return (
-                              <div key={lineIndex} className="flex items-start">
-                                <div className="w-2 h-2 bg-black rounded-full mt-2.5 mr-4 flex-shrink-0"></div>
-                                <span className="text-black leading-relaxed">
-                                  {line.replace(/^[•*]\s*/, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-                                </span>
-                              </div>
-                            );
-                          }
-                          return line.trim() ? (
-                            <p key={lineIndex} className="text-black font-semibold text-lg mb-2">
-                              {line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-                            </p>
-                          ) : null;
-                        })}
-                      </div>
-                    );
-                  }
-
-                  // Regular paragraphs
-                  return (
-                    <p key={paragraphIndex} className="text-black leading-relaxed text-base">
-                      {paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-                    </p>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div key={index} className="mb-8">
-          <div className="text-gray-800 leading-relaxed space-y-4">
-            {section.split('\n\n').map((paragraph, paragraphIndex) =>
-              paragraph.trim() ? (
-                <p key={paragraphIndex} className="text-gray-800 text-base leading-relaxed">
-                  {paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-                </p>
-              ) : null
-            )}
-          </div>
-        </div>
-      );
-    });
+      .replace(/^\s*[-•]\s*/gm, '') // Remove bullet points
+      .trim();
   };
 
   return (
@@ -198,27 +122,12 @@ const AiAnalysisCard: FC<AiAnalysisCardProps> = ({
         )}
       </div>
 
-      {/* Content Section */}
+      {/* Content Section - Simple Block */}
       <div className="px-8 py-8">
-        <div className="max-w-none">
-          {analysis.includes('##') ? (
-            <div className="space-y-2">{formatAnalysisText(analysis)}</div>
-          ) : (
-            <div className="text-black leading-relaxed space-y-6">
-              {analysis
-                .replace(/\\n/g, '\n') // Handle escaped newlines
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Convert to HTML bold
-                .replace(/\*(.*?)\*/g, '<em>$1</em>') // Convert to HTML italic
-                .split('\n\n')
-                .map((paragraph, index) =>
-                  paragraph.trim() ? (
-                    <p key={index} className="text-black text-base leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: paragraph }}>
-                    </p>
-                  ) : null
-                )}
-            </div>
-          )}
+        <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <div className="text-gray-800 text-base leading-relaxed whitespace-pre-line text-left">
+            {formatAnalysisText(analysis)}
+          </div>
         </div>
       </div>
 
