@@ -243,6 +243,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://kemicrypto.icu",
         "https://kemicrypto.icu",
+        "https://kemi-frontend-uuql.onrender.com"
         "https://kemi-frontend.onrender.com",
         "https://kemi-iqae.onrender.com"
     ],  # Frontend URLs
